@@ -1,299 +1,72 @@
-
-import java.util.Scanner;
+import javax.swing.JOptionPane;
 
 public class Main {
-
-        private static java.util.List<Message> GlobalMessageHistory = new java.util.ArrayList<>();
-        private static int totalMessageSent = 0;
-        private static Scanner scanner = new Scanner(System.in);
-        // ... your userName, password etc here
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        String cell = JOptionPane.showInputDialog("Enter cell number (e.g. +27838884567):");
+        String firstName = JOptionPane.showInputDialog("Enter first name:");
+        String lastName = JOptionPane.showInputDialog("Enter last name:");
+        JOptionPane.showMessageDialog(null, "Welcome " + firstName + " " + lastName + ", it is great to see you.");
 
-        String firstName = "";
-        String lastName = "";
-        String userName = "";
-        String password = "";
+        Message.loadFromJSON();
 
-        // ===== REGISTRATION =====
-        System.out.println(" ===== REGISTRATION ===== ");
+        boolean running = true;
+        while (running) {
+            String choice = JOptionPane.showInputDialog("Welcome to QuickChat\n1) Send Messages\n2) Show Recently Sent Messages\n3) Quit\n4) Stored Messages");
+            if (choice == null) break;
 
-        boolean hasNumber = false;
-        boolean hasSpace = false;
-
-        // ===== FIRST NAME VALIDATION =====
-        while (true) {
-            System.out.println("Enter first name:");
-            firstName = scanner.nextLine();
-
-            hasSpace = false;
-            hasNumber = false;
-
-            for (int i = 0; i < firstName.length(); i++) {
-                char c = firstName.charAt(i);
-
-                if (c == ' ') {
-                    hasSpace = true;
+            if (choice.equals("1")) {
+                String numStr = JOptionPane.showInputDialog("How many messages do you want to send?");
+                int num = Integer.parseInt(numStr);
+                for (int i = 0; i < num; i++) {
+                    String recipient = JOptionPane.showInputDialog("Enter recipient number:");
+                    Message m = new Message();
+                    if (!m.checkRecipientCell(recipient)) {
+                        JOptionPane.showMessageDialog(null, "Cell phone number incorrectly formatted.");
+                        continue;
+                    }
+                    String text = JOptionPane.showInputDialog("Enter your message (max 250 chars):");
+                    if (text.length() > 250) {
+                        JOptionPane.showMessageDialog(null, "Please enter a message of less than 250 characters.");
+                        continue;
+                    }
+                    String id = m.createMessageID();
+                    String hash = m.createMessageHash(id, Message.getNumMessagesSent(), text);
+                    String option = JOptionPane.showInputDialog("What do you want to do?\n1) Send\n2) Disregard\n3) Store");
+                    String flag = "";
+                    if (option.equals("1")) {
+                        flag = "Sent";
+                        Message.incrementSent();
+                        JOptionPane.showMessageDialog(null, "Message sent!\nID: " + id + "\nHash: " + hash);
+                    } else if (option.equals("2")) {
+                        flag = "Disregard";
+                        JOptionPane.showMessageDialog(null, "Message disregarded.");
+                    } else if (option.equals("3")) {
+                        flag = "Stored";
+                        JOptionPane.showMessageDialog(null, "Message stored.");
+                    }
+                    Message.addMessage(cell, recipient, text, hash, id, flag);
                 }
-
-                if (Character.isDigit(c)) {
-                    hasNumber = true;
-                }
-            }
-
-            if (hasSpace) {
-                System.out.println("First name must not have space");
-            } else if (hasNumber) {
-                System.out.println("First name must not have number");
-            } else if (firstName.isEmpty()) {
-                System.out.println("First name cannot be empty");
-            } else {
-                break;
+            } else if (choice.equals("2")) {
+                JOptionPane.showMessageDialog(null, "Coming soon - Recently Sent Messages");
+            } else if (choice.equals("3")) {
+                running = false;
+                JOptionPane.showMessageDialog(null, "Total messages sent: " + Message.getNumMessagesSent());
+            } else if (choice.equals("4")) {
+                String sub = JOptionPane.showInputDialog("Stored Messages\na) Display Sender and Recipient\nb) Display Longest Message\nc) Search by Message ID\nd) Search by Recipient\ne) Delete by Hash\nf) Display Report");
+                if (sub == null) continue;
+                if (sub.equalsIgnoreCase("a")) JOptionPane.showMessageDialog(null, Message.displaySenderAndRecipient());
+                else if (sub.equalsIgnoreCase("b")) JOptionPane.showMessageDialog(null, "Longest Stored Message:\n" + Message.displayLongestMessage());
+                else if (sub.equalsIgnoreCase("c")) {
+                    String id = JOptionPane.showInputDialog("Enter Message ID:");
+                    JOptionPane.showMessageDialog(null, Message.searchByMessageID(id));
+                } else if (sub.equalsIgnoreCase("d")) {
+                    String rec = JOptionPane.showInputDialog("Enter Recipient (e.g. +27838884567):");
+                    JOptionPane.showMessageDialog(null, Message.searchByRecipient(rec));
+                } else if (sub.equalsIgnoreCase("e")) {
+                    String hash = JOptionPane.showInputDialog("Enter Message Hash:");
+                    JOptionPane.showMessageDialog(null, Message.deleteByHash(hash));
+                } else if (sub.equalsIgnoreCase("f")) JOptionPane.showMessageDialog(null, Message.displayReport());
             }
         }
-
-        // ===== LAST NAME VALIDATION =====
-        while (true) {
-            System.out.println("Enter last name:");
-            lastName = scanner.nextLine();
-
-            hasSpace = false;
-            hasNumber = false;
-
-            for (int i = 0; i < lastName.length(); i++) {
-                char c = lastName.charAt(i);
-
-                if (c == ' ') {
-                    hasSpace = true;
-                }
-
-                if (Character.isDigit(c)) {
-                    hasNumber = true;
-                }
-            }
-
-            if (hasSpace) {
-                System.out.println("Last name must not have space");
-            } else if (hasNumber) {
-                System.out.println("Last name must not have number");
-            } else if (lastName.isEmpty()) {
-                System.out.println("Last name cannot be empty");
-            } else {
-                break;
-            }
-        }
-
-        // ===== USERNAME VALIDATION =====
-        while (true) {
-            System.out.println("Enter username: ");
-            userName = scanner.nextLine();
-
-            if (userName.length() > 10) {
-                System.out.println("Username must be max 10 characters");
-            } else if (userName.contains(" ")) {
-                System.out.println("Username must not have space");
-            } else if (userName.isEmpty()) {
-                System.out.println("Username cannot be empty");
-            } else {
-                break;
-            }
-        }
-
-        // ===== PASSWORD VALIDATION =====
-        // Password validation - min 6, upper and lower
-        while (true) {
-            System.out.println("Enter password: ");
-            password = scanner.nextLine();
-
-            boolean hasUpper = false;
-            boolean hasLower = false;
-
-            for (int i = 0; i < password.length(); i++) {
-                char c = password.charAt(i);
-
-                if (Character.isUpperCase(c)) {
-                    hasUpper = true;
-                }
-
-                if (Character.isLowerCase(c)) {
-                    hasLower = true;
-                }
-            }
-
-            if (password.length() < 6) {
-                System.out.println("Password must be at least 6 characters");
-            } else if (!hasUpper) {
-                System.out.println("Password must contain an uppercase letter");
-            } else if (!hasLower) {
-                System.out.println("Password must contain a lowercase letter");
-            } else {
-                break;
-            }
-        }
-
-        // ===== LOGIN =====
-        System.out.println("\nlogin");
-
-        while (true) {
-            System.out.println("Enter username: ");
-            String loginUser = scanner.nextLine();
-
-            System.out.println("Enter password: ");
-            String loginPass = scanner.nextLine();
-
-            if (loginUser.equals(userName) && loginPass.equals(password)) {
-                System.out.println("Welcome " + firstName + " " + lastName + "!");
-                break;
-            } else {
-                System.out.println("Wrong username or password, try again");
-            }
-        }
-
-        System.out.println("Welcome to QuichChat.");
-        int selection = 0;
-
-        while (selection != 3) {
-            System.out.println("Send Messages");
-            System.out.println("Show recently sent messages");
-            System.out.println("Quit");
-            System.out.println("Please select an option");
-
-            if (scanner.hasNextInt()) {
-                selection = scanner.nextInt();
-                scanner.nextLine();
-
-                switch (selection) {
-                    case 1:
-                        runSendMessage(scanner);
-                        break;
-                    case 2:
-                        System.out.println("Coming soon");
-                        break;
-                    case 3:
-                        System.out.println("Exiting application loop. Goodbye!");
-                        break;
-                    default:
-                        System.out.println("Invalid selection option context bounds.");
-                }
-            } else {
-                System.out.println("Invalid choice input. Please select via option digit numbers.");
-                scanner.nextLine();
-                continue;
-            }
-
-
-        }
-        scanner.close();
     }
-
-    private static void runSendMessage(Scanner scanner) {
-        System.out.println("How many messages do you wish to enter? ");
-        int totalBatchCount = 0;
-
-        if (scanner.hasNextInt()) {
-            totalBatchCount = scanner.nextInt();
-            scanner.nextInt(); // consume enter
-        } else {
-            System.out.println("Invalid input count detected.");
-            scanner.nextLine();
-            return;
-        }
-
-        for (int i = 0; i < totalBatchCount; i++) {
-            System.out.println("------Processing Message " + (i + 1) + " of " + totalBatchCount + "------");
-            Message messageInstance = new Message();
-
-            if (!messageInstance.checkMessageID()) {
-                System.out.println("Critical Error occurred: Invalid ID structure encountered. ");
-                continue;
-            }
-
-            while (true) {
-                System.out.println("Enter Recipient Cell Number (e.g., +27729718441): ");
-                String cellInput = scanner.nextLine();
-                if (messageInstance.checkRecipientCell(cellInput)) {
-                    messageInstance.setRecipientCell(cellInput);
-                    break;
-                } else {
-                    System.out.println("Incorrect format configuration. Must contain internation code. ");
-
-                }
-            }
-
-            while (true) {
-                System.out.println("Enter message body content text: ");
-                String textInput = scanner.nextLine();
-                if (textInput.length() <= 250) {
-                    System.out.println("Message sent");
-                    break;
-                } else {
-                    System.out.println("Please enter a amessage of less than 250 characters. ");
-                }
-            }
-
-            messageInstance.createMessageHash(totalMessageSent, messageInstance.getMessageText());
-
-            System.out.println("Select structural handling path outcome routines");
-            System.out.println("1 - Send Message");
-            System.out.println("2 - Disregard Message");
-            System.out.println("3 - Store Message");
-            System.out.println("Action choice selection input: ");
-
-            int handlingChoice = 0;
-            if (scanner.hasNextInt()) {
-                handlingChoice = scanner.nextInt();
-                scanner.nextLine();
-            } else {
-                scanner.nextLine();
-            }
-
-            System.out.println(messageInstance.SentMessage(handlingChoice));
-
-            if (handlingChoice == 2) {
-                System.out.println("Message disregarded by manual input rule triggers. ");
-                continue;
-            }
-
-            GlobalMessageHistory.add(messageInstance);
-            totalMessageSent++;
-
-            System.out.println(messageInstance.printMessages());
-
-        }
-
-        returnTotalMessages();
-    }
-
-    public static int returnTotalMessages() {
-        System.out.println(">>> Cumulative program messages processed history: " + totalMessageSent + " <<< ");
-        return totalMessageSent;
-    }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
